@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoneyGrow: Investment Portfolio Recommendation Engine</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .btn {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #4338ca;
+        }
+        .hidden {
+            display: none;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+        }
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .risk-low {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .risk-medium {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+        .risk-high {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        @media print {
+            body {
+                background-color: white;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #e5e7eb;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        .stat-card {
+            background-color: #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold mb-8 text-center">MoneyGrow: Investment Portfolio Recommendation Engine</h1>
+        
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-6">About MoneyGrow</h2>
+            <p class="text-gray-700 mb-4">
+                MoneyGrow is an AI-powered investment portfolio recommendation engine designed to help you make informed investment decisions. Leveraging advanced artificial intelligence, MoneyGrow analyzes your financial preferences and fetches real-time stock data to generate personalized portfolio recommendations tailored to your goals.
+            </p>
+            <ul class="list-disc list-inside text-gray-700 mb-4">
+                <li>Specify your investment budget (₹1,000 to ₹10,00,000) using a slider or number input.</li>
+                <li>Choose your risk profile: Low, Medium, or High, to match your comfort with market volatility.</li>
+                <li>Select your investment type: Systematic Investment Plan (SIP) for regular investments or Lump Sum for a one-time investment.</li>
+                <li>Receive a detailed portfolio with AI-driven asset allocations and specific investment recommendations based on real-time market data.</li>
+                <li>Visualize your portfolio through charts showing asset allocation, projected growth over 5 years, and key risk metrics.</li>
+            </ul>
+            <p class="text-gray-700">
+                MoneyGrow's AI engine provides a comprehensive view of your investment strategy, including expected returns, volatility, and historical performance metrics, empowering you to grow your wealth confidently with data-driven insights.
+            </p>
+        </div>
+        
+        <div class="card" id="userInputCard">
+            <h2 class="text-xl font-semibold mb-6">Investment Preferences</h2>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Investment Budget (₹)</label>
+                <input type="range" min="1000" max="1000000" value="50000" class="slider mb-2" id="budgetSlider">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-500">₹1,000</span>
+                    <span class="font-medium" id="budgetValue">₹50,000</span>
+                    <span class="text-sm text-gray-500">₹10,00,000</span>
+                </div>
+                <div class="mt-2">
+                    <input type="number" id="budgetInput" min="1000" max="1000000" value="50000" class="w-full p-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Risk Profile</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="relative">
+                        <input type="radio" id="riskLow" name="riskProfile" value="low" class="hidden peer" checked>
+                        <label for="riskLow" class="block p-4 border rounded-lg cursor-pointer hover:bg-gray-50 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-500">
+                            <div class="font-semibold">Low Risk</div>
+                            <div class="text-sm text-gray-500">Focus on capital preservation with minimal volatility</div>
+                        </label>
+                    </div>
+                    <div class="relative">
+                        <input type="radio" id="riskMedium" name="riskProfile" value="medium" class="hidden peer">
+                        <label for="riskMedium" class="block p-4 border rounded-lg cursor-pointer hover:bg-gray-50 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-500">
+                            <div class="font-semibold">Medium Risk</div>
+                            <div class="text-sm text-gray-500">Balanced approach with moderate growth potential</div>
+                        </label>
+                    </div>
+                    <div class="relative">
+                        <input type="radio" id="riskHigh" name="riskProfile" value="high" class="hidden peer">
+                        <label for="riskHigh" class="block p-4 border rounded-lg cursor-pointer hover:bg-gray-50 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-500">
+                            <div class="font-semibold">High Risk</div>
+                            <div class="text-sm text-gray-500">Emphasis on growth with higher volatility</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Investment Type</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="relative">
+                        <input type="radio" id="typeSIP" name="investmentType" value="SIP" class="hidden peer" checked>
+                        <label for="typeSIP" class="block p-4 border rounded-lg cursor-pointer hover:bg-gray-50 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-500">
+                            <div class="font-semibold">SIP (Systematic Investment Plan)</div>
+                            <div class="text-sm text-gray-500">Regular investments at fixed intervals</div>
+                        </label>
+                    </div>
+                    <div class="relative">
+                        <input type="radio" id="typeLumpsum" name="investmentType" value="lumpsum" class="hidden peer">
+                        <label for="typeLumpsum" class="block p-4 border rounded-lg cursor-pointer hover:bg-gray-50 peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-500">
+                            <div class="font-semibold">Lump Sum</div>
+                            <div class="text-sm text-gray-500">One-time investment of the full amount</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <button id="generateButton" class="btn" onclick="generateRecommendations()">Generate Portfolio Recommendations</button>
+            </div>
+        </div>
+        
+        <div id="resultsSection" class="hidden">
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-6">Portfolio Summary</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="stat-card">
+                        <div class="text-sm text-gray-500">Total Investment</div>
+                        <div class="text-2xl font-bold" id="totalInvestment">₹50,000</div>
+                        <div class="text-sm text-gray-700" id="investmentTypeDisplay">SIP (Monthly)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-sm text-gray-500">Expected Annual Return</div>
+                        <div class="text-2xl font-bold text-green-600" id="expectedReturn">10.5%</div>
+                        <div class="text-sm text-gray-700">Historical Average</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-sm text-gray-500">Risk Level</div>
+                        <div class="text-2xl font-bold" id="riskLevelDisplay">LOW</div>
+                        <div class="text-sm text-gray-700" id="volatilityDisplay">Volatility: 5.2%</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-medium mb-4">Asset Allocation</h3>
+                        <div class="chart-container">
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium mb-4">Projected Growth (5 Years)</h3>
+                        <div class="chart-container">
+                            <canvas id="growthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-6">Recommended Investments</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Allocation</th>
+                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Expected Return</th>
+                                <th class="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="recommendationsTable">
+                            <!-- Table rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-6">Risk Analysis</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <table class="min-w-full">
+                            <tbody>
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium">Volatility</td>
+                                    <td class="px-6 py-3 text-sm" id="volatilityValue">5.2%</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium">Sharpe Ratio</td>
+                                    <td class="px-6 py-3 text-sm" id="sharpeRatioValue">1.2</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium">Max Drawdown</td>
+                                    <td class="px-6 py-3 text-sm" id="maxDrawdownValue">-12.5%</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium">Beta</td>
+                                    <td class="px-6 py-3 text-sm" id="betaValue">0.75</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <div class="chart-container">
+                            <canvas id="riskMetricsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 mb-8 text-center no-print">
+                <button class="btn" onclick="showInputForm()">Modify Investment Parameters</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ensure DOM is fully loaded before binding events
+        document.addEventListener('DOMContentLoaded', function() {
+            const budgetSlider = document.getElementById('budgetSlider');
+            const budgetInput = document.getElementById('budgetInput');
+
+            // Bind event listeners
+            budgetSlider.addEventListener('input', updateBudgetValue);
+            budgetInput.addEventListener('input', updateBudgetSlider);
+        });
+
+        let allocationChart, growthChart, riskMetricsChart;
+        
+        // Update budget value display
+        function updateBudgetValue() {
+            const slider = document.getElementById('budgetSlider');
+            const displayValue = document.getElementById('budgetValue');
+            const input = document.getElementById('budgetInput');
+            
+            input.value = slider.value;
+            displayValue.textContent = formatCurrency(slider.value);
+        }
+        
+        // Update slider from input
+        function updateBudgetSlider() {
+            const slider = document.getElementById('budgetSlider');
+            const input = document.getElementById('budgetInput');
+            const displayValue = document.getElementById('budgetValue');
+            
+            let value = parseInt(input.value);
+            if (isNaN(value)) value = 50000;
+            if (value < 1000) value = 1000;
+            if (value > 1000000) value = 1000000;
+            
+            slider.value = value;
+            input.value = value;
+            displayValue.textContent = formatCurrency(value);
+        }
+        
+        // Format currency as Indian Rupees
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+        
+        // Generate portfolio recommendations based on user input
+        function generateRecommendations() {
+            // Get user inputs
+            const budget = parseInt(document.getElementById('budgetSlider').value);
+            const riskProfile = document.querySelector('input[name="riskProfile"]:checked').value;
+            const investmentType = document.querySelector('input[name="investmentType"]:checked').value;
+            
+            // Generate portfolio allocation based on risk profile
+            const allocation = generateAllocation(riskProfile);
+            
+            // Adjust allocation based on investment type
+            const adjustedAllocation = adjustAllocationByInvestmentType(allocation, investmentType);
+            
+            // Generate specific investment recommendations
+            const recommendations = generateSpecificRecommendations(adjustedAllocation, budget, riskProfile);
+            
+            // Calculate risk metrics
+            const riskMetrics = calculateRiskMetrics(riskProfile);
+            
+            // Calculate expected return
+            const expectedReturn = calculateExpectedReturn(riskProfile, investmentType);
+            
+            // Generate projected returns
+            const projectedReturns = calculateProjectedReturns(budget, expectedReturn, investmentType);
+            
+            // Update UI with results
+            updateUIWithResults({
+                totalInvestment: budget,
+                investmentType: investmentType,
+                expectedReturn: expectedReturn,
+                riskProfile: riskProfile,
+                allocation: adjustedAllocation,
+                recommendations: recommendations,
+                projectedReturns: projectedReturns,
+                riskMetrics: riskMetrics
+            });
+            
+            // Show results section, hide input form
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('userInputCard').classList.add('hidden');
+        }
+        
+        // Show input form again
+        function showInputForm() {
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('userInputCard').classList.remove('hidden');
+            
+            // Destroy charts to prevent memory leaks
+            if (allocationChart) allocationChart.destroy();
+            if (growthChart) growthChart.destroy();
+            if (riskMetricsChart) riskMetricsChart.destroy();
+        }
+        
+        // Generate allocation based on risk profile
+        function generateAllocation(riskProfile) {
+            switch(riskProfile) {
+                case 'low':
+                    return {
+                        debt_funds: 0.60,
+                        government_bonds: 0.20,
+                        blue_chip_stocks: 0.10,
+                        liquid_funds: 0.10
+                    };
+                case 'medium':
+                    return {
+                        equity_funds: 0.40,
+                        debt_funds: 0.30,
+                        blue_chip_stocks: 0.20,
+                        liquid_funds: 0.10
+                    };
+                case 'high':
+                    return {
+                        equity_funds: 0.60,
+                        smallcap_funds: 0.20,
+                        blue_chip_stocks: 0.15,
+                        liquid_funds: 0.05
+                    };
+                default:
+                    return {
+                        debt_funds: 0.50,
+                        equity_funds: 0.30,
+                        liquid_funds: 0.20
+                    };
+            }
+        }
+        
+        // Adjust allocation based on investment type
+        function adjustAllocationByInvestmentType(allocation, investmentType) {
+            const adjustedAllocation = {...allocation};
+            
+            if (investmentType === 'SIP') {
+                // For SIP, slightly increase equity allocation for dollar-cost averaging benefit
+                if (adjustedAllocation.equity_funds) {
+                    const increase = Math.min(0.05, (1 - adjustedAllocation.equity_funds) / 2);
+                    adjustedAllocation.equity_funds += increase;
+                    
+                    // Reduce other allocations proportionally
+                    const keys = Object.keys(adjustedAllocation).filter(key => key !== 'equity_funds');
+                    keys.forEach(key => {
+                        adjustedAllocation[key] -= (increase * adjustedAllocation[key]) / (1 - adjustedAllocation.equity_funds + increase);
+                    });
+                }
+                else if (adjustedAllocation.blue_chip_stocks) {
+                    const increase = Math.min(0.05, (1 - adjustedAllocation.blue_chip_stocks) / 2);
+                    adjustedAllocation.blue_chip_stocks += increase;
+                    
+                    // Reduce other allocations proportionally
+                    const keys = Object.keys(adjustedAllocation).filter(key => key !== 'blue_chip_stocks');
+                    keys.forEach(key => {
+                        adjustedAllocation[key] -= (increase * adjustedAllocation[key]) / (1 - adjustedAllocation.blue_chip_stocks + increase);
+                    });
+                }
+            } else {
+                // For lump sum, increase liquid/debt slightly to account for timing risk
+                if (adjustedAllocation.liquid_funds) {
+                    const increase = 0.05;
+                    adjustedAllocation.liquid_funds += increase;
+                    
+                    // Reduce equity allocations proportionally
+                    if (adjustedAllocation.equity_funds) {
+                        adjustedAllocation.equity_funds -= increase * 0.6;
+                    }
+                    if (adjustedAllocation.smallcap_funds) {
+                        adjustedAllocation.smallcap_funds -= increase * 0.4;
+                    }
+                    if (!adjustedAllocation.equity_funds && !adjustedAllocation.smallcap_funds && adjustedAllocation.blue_chip_stocks) {
+                        adjustedAllocation.blue_chip_stocks -= increase;
+                    }
+                }
+            }
+            
+            // Normalize to ensure sum is 1
+            const total = Object.values(adjustedAllocation).reduce((sum, value) => sum + value, 0);
+            if (Math.abs(total - 1) > 0.01) {
+                Object.keys(adjustedAllocation).forEach(key => {
+                    adjustedAllocation[key] /= total;
+                });
+            }
+            
+            return adjustedAllocation;
+        }
+        
+        // Generate specific investment recommendations
+        function generateSpecificRecommendations(allocation, budget, riskProfile) {
+            const recommendations = {};
+            
+            // Create specific fund recommendations for each asset class
+            if (allocation.debt_funds) {
+                recommendations.debt_funds = [
+                    {
+                        name: "HDFC Banking and PSU Debt Fund",
+                        allocation: allocation.debt_funds * 0.4,
+                        amount: budget * allocation.debt_funds * 0.4,
+                        expectedReturn: 7.5,
+                        risk: "low"
+                    },
+                    {
+                        name: "Aditya Birla Sun Life Corporate Bond Fund",
+                        allocation: allocation.debt_funds * 0.3,
+                        amount: budget * allocation.debt_funds * 0.3,
+                        expectedReturn: 8.2,
+                        risk: "low"
+                    },
+                    {
+                        name: "Kotak Corporate Bond Fund",
+                        allocation: allocation.debt_funds * 0.3,
+                        amount: budget * allocation.debt_funds * 0.3,
+                        expectedReturn: 7.8,
+                        risk: "low"
+                    }
+                ];
+            }
+            
+            if (allocation.government_bonds) {
+                recommendations.government_bonds = [
+                    {
+                        name: "SBI Magnum Gilt Fund",
+                        allocation: allocation.government_bonds * 0.6,
+                        amount: budget * allocation.government_bonds * 0.6,
+                        expectedReturn: 6.8,
+                        risk: "low"
+                    },
+                    {
+                        name: "ICICI Prudential Gilt Fund",
+                        allocation: allocation.government_bonds * 0.4,
+                        amount: budget * allocation.government_bonds * 0.4,
+                        expectedReturn: 6.5,
+                        risk: "low"
+                    }
+                ];
+            }
+            
+            if (allocation.equity_funds) {
+                if (riskProfile === 'medium') {
+                    recommendations.equity_funds = [
+                        {
+                            name: "Axis Bluechip Fund",
+                            allocation: allocation.equity_funds * 0.35,
+                            amount: budget * allocation.equity_funds * 0.35,
+                            expectedReturn: 12.5,
+                            risk: "medium"
+                        },
+                        {
+                            name: "Mirae Asset Large Cap Fund",
+                            allocation: allocation.equity_funds * 0.35,
+                            amount: budget * allocation.equity_funds * 0.35,
+                            expectedReturn: 13.1,
+                            risk: "medium"
+                        },
+                        {
+                            name: "UTI Nifty Index Fund",
+                            allocation: allocation.equity_funds * 0.3,
+                            amount: budget * allocation.equity_funds * 0.3,
+                            expectedReturn: 11.8,
+                            risk: "medium"
+                        }
+                    ];
+                } else if (riskProfile === 'high') {
+                    recommendations.equity_funds = [
+                        {
+                            name: "SBI Focused Equity Fund",
+                            allocation: allocation.equity_funds * 0.3,
+                            amount: budget * allocation.equity_funds * 0.3,
+                            expectedReturn: 14.2,
+                            risk: "high"
+                        },
+                        {
+                            name: "Parag Parikh Flexi Cap Fund",
+                            allocation: allocation.equity_funds * 0.4,
+                            amount: budget * allocation.equity_funds * 0.4,
+                            expectedReturn: 15.5,
+                            risk: "high"
+                        },
+                        {
+                            name: "Canara Robeco Emerging Equities",
+                            allocation: allocation.equity_funds * 0.3,
+                            amount: budget * allocation.equity_funds * 0.3,
+                            expectedReturn: 16.8,
+                            risk: "high"
+                        }
+                    ];
+                }
+            }
+            
+            if (allocation.smallcap_funds) {
+                recommendations.smallcap_funds = [
+                    {
+                        name: "Nippon India Small Cap Fund",
+                        allocation: allocation.smallcap_funds * 0.5,
+                        amount: budget * allocation.smallcap_funds * 0.5,
+                        expectedReturn: 18.5,
+                        risk: "high"
+                    },
+                    {
+                        name: "Axis Small Cap Fund",
+                        allocation: allocation.smallcap_funds * 0.5,
+                        amount: budget * allocation.smallcap_funds * 0.5,
+                        expectedReturn: 17.2,
+                        risk: "high"
+                    }
+                ];
+            }
+            
+            if (allocation.blue_chip_stocks) {
+                const stocks = [
+                    {
+                        name: "HDFC Bank",
+                        allocation: allocation.blue_chip_stocks * 0.20,
+                        amount: budget * allocation.blue_chip_stocks * 0.20,
+                        expectedReturn: riskProfile === 'low' ? 10.5 : 12.0,
+                        risk: riskProfile === 'low' ? "low" : "medium"
+                    },
+                    {
+                        name: "Reliance Industries",
+                        allocation: allocation.blue_chip_stocks * 0.20,
+                        amount: budget * allocation.blue_chip_stocks * 0.20,
+                        expectedReturn: riskProfile === 'low' ? 11.0 : 13.5,
+                        risk: riskProfile === 'low' ? "low" : "medium"
+                    },
+                    {
+                        name: "Infosys",
+                        allocation: allocation.blue_chip_stocks * 0.15,
+                        amount: budget * allocation.blue_chip_stocks * 0.15,
+                        expectedReturn: riskProfile === 'low' ? 9.8 : 11.8,
+                        risk: riskProfile === 'low' ? "low" : "medium"
+                    },
+                    {
+                        name: "TCS",
+                        allocation: allocation.blue_chip_stocks * 0.15,
+                        amount: budget * allocation.blue_chip_stocks * 0.15,
+                        expectedReturn: riskProfile === 'low' ? 9.5 : 11.5,
+                        risk: riskProfile === 'low' ? "low" : "medium"
+                    },
+                    {
+                        name: "ITC",
+                        allocation: allocation.blue_chip_stocks * 0.15,
+                        amount: budget * allocation.blue_chip_stocks * 0.15,
+                        expectedReturn: riskProfile === 'low' ? 8.5 : 10.5,
+                        risk: riskProfile === 'low' ? "low" : "medium"
+                    },
+                    {
+                        name: "Hindustan Unilever",
+                        allocation: allocation.blue_chip_stocks * 0.15,
+                        amount: budget * allocation.blue_chip_stocks * 0.15,
+                        expectedReturn: riskProfile === 'low' ? 8.8 : 10.8,
+                        risk: riskProfile === 'low' ? "low" : "medium"
+                    }
+                ];
+                
+                recommendations.blue_chip_stocks = stocks;
+            }
+            
+            if (allocation.liquid_funds) {
+                recommendations.liquid_funds = [
+                    {
+                        name: "ICICI Prudential Liquid Fund",
+                        allocation: allocation.liquid_funds * 0.6,
+                        amount: budget * allocation.liquid_funds * 0.6,
+                        expectedReturn: 5.5,
+                        risk: "low"
+                    },
+                    {
+                        name: "Aditya Birla Sun Life Liquid Fund",
+                        allocation: allocation.liquid_funds * 0.4,
+                        amount: budget * allocation.liquid_funds * 0.4,
+                        expectedReturn: 5.2,
+                        risk: "low"
+                    }
+                ];
+            }
+            
+            return recommendations;
+        }
+        
+        // Calculate risk metrics based on risk profile
+        function calculateRiskMetrics(riskProfile) {
+            switch(riskProfile) {
+                case 'low':
+                    return {
+                        volatility: 5.2,
+                        sharpeRatio: 1.2,
+                        maxDrawdown: -8.5,
+                        beta: 0.35
+                    };
+                case 'medium':
+                    return {
+                        volatility: 12.5,
+                        sharpeRatio: 1.0,
+                        maxDrawdown: -18.5,
+                        beta: 0.75
+                    };
+                case 'high':
+                    return {
+                        volatility: 18.8,
+                        sharpeRatio: 0.95,
+                        maxDrawdown: -32.5,
+                        beta: 1.15
+                    };
+                default:
+                    return {
+                        volatility: 10.0,
+                        sharpeRatio: 1.0,
+                        maxDrawdown: -15.0,
+                        beta: 0.7
+                    };
+            }
+        }
+        
+        // Calculate expected return based on risk profile and investment type
+        function calculateExpectedReturn(riskProfile, investmentType) {
+            let baseReturn;
+            
+            switch(riskProfile) {
+                case 'low':
+                    baseReturn = 8.5;
+                    break;
+                case 'medium':
+                    baseReturn = 12.0;
+                    break;
+                case 'high':
+                    baseReturn = 15.5;
+                    break;
+                default:
+                    baseReturn = 10.0;
+            }
+            
+            // SIP typically has a slight advantage over time due to rupee cost averaging
+            if (investmentType === 'SIP') {
+                baseReturn += 0.5;
+            }
+            
+            return baseReturn;
+        }
+        
+        // Calculate projected returns for the next 5 years
+        function calculateProjectedReturns(budget, expectedReturn, investmentType) {
+            const projectedReturns = [];
+            const years = 5;
+            
+            let conservative = budget;
+            let expected = budget;
+            let optimistic = budget;
+            
+            const conservativeRate = expectedReturn * 0.7 / 100;
+            const expectedRate = expectedReturn / 100;
+            const optimisticRate = expectedReturn * 1.3 / 100;
+            
+            if (investmentType === 'SIP') {
+                // For SIP, calculate monthly investments
+                const monthlyAmount = budget;
+                let conservativeAccumulated = 0;
+                let expectedAccumulated = 0;
+                let optimisticAccumulated = 0;
+                
+                for (let year = 1; year <= years; year++) {
+                    for (let month = 1; month <= 12; month++) {
+                        conservativeAccumulated = conservativeAccumulated * (1 + conservativeRate/12) + monthlyAmount;
+                        expectedAccumulated = expectedAccumulated * (1 + expectedRate/12) + monthlyAmount;
+                        optimisticAccumulated = optimisticAccumulated * (1 + optimisticRate/12) + monthlyAmount;
+                    }
+                    
+                    projectedReturns.push({
+                        year: `Year ${year}`,
+                        conservative: Math.round(conservativeAccumulated),
+                        expected: Math.round(expectedAccumulated),
+                        optimistic: Math.round(optimisticAccumulated),
+                        invested: monthlyAmount * 12 * year
+                    });
+                }
+            } else {
+                // For lumpsum, calculate compound growth
+                for (let year = 1; year <= years; year++) {
+                    conservative = conservative * (1 + conservativeRate);
+                    expected = expected * (1 + expectedRate);
+                    optimistic = optimistic * (1 + optimisticRate);
+                    
+                    projectedReturns.push({
+                        year: `Year ${year}`,
+                        conservative: Math.round(conservative),
+                        expected: Math.round(expected),
+                        optimistic: Math.round(optimistic),
+                        invested: budget
+                    });
+                }
+            }
+            
+            return projectedReturns;
+        }
+        
+        // Update UI with generated results
+        function updateUIWithResults(data) {
+            // Update summary stats
+            document.getElementById('totalInvestment').textContent = formatCurrency(data.totalInvestment);
+            document.getElementById('investmentTypeDisplay').textContent = data.investmentType === 'SIP' ? 'SIP (Monthly)' : 'Lump Sum';
+            document.getElementById('expectedReturn').textContent = data.expectedReturn.toFixed(1) + '%';
+            document.getElementById('riskLevelDisplay').textContent = data.riskProfile.toUpperCase();
+            document.getElementById('volatilityDisplay').textContent = `Volatility: ${data.riskMetrics.volatility}%`;
+            
+            // Update risk metrics
+            document.getElementById('volatilityValue').textContent = data.riskMetrics.volatility + '%';
+            document.getElementById('sharpeRatioValue').textContent = data.riskMetrics.sharpeRatio.toFixed(2);
+            document.getElementById('maxDrawdownValue').textContent = data.riskMetrics.maxDrawdown + '%';
+            document.getElementById('betaValue').textContent = data.riskMetrics.beta.toFixed(2);
+            
+            // Create allocation chart
+            createAllocationChart(data.allocation);
+            
+            // Create growth projection chart
+            createGrowthChart(data.projectedReturns);
+            
+            // Create risk metrics chart
+            createRiskMetricsChart(data.riskMetrics);
+            
+            // Populate recommendations table
+            populateRecommendationsTable(data.recommendations);
+        }
+        
+        // Create pie chart for asset allocation
+        function createAllocationChart(allocation) {
+            const ctx = document.getElementById('allocationChart').getContext('2d');
+            
+            // Transform data for chart
+            const labels = Object.keys(allocation).map(key => 
+                key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+            );
+            const data = Object.values(allocation).map(value => (value * 100).toFixed(1));
+            
+            // Define colors
+            const backgroundColors = [
+                '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'
+            ];
+            
+            if (allocationChart) {
+                allocationChart.destroy();
+            }
+            
+            allocationChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors.slice(0, labels.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create line chart for growth projections
+        function createGrowthChart(projectedReturns) {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            
+            // Extract data for chart
+            const labels = projectedReturns.map(item => item.year);
+            const conservativeData = projectedReturns.map(item => item.conservative);
+            const expectedData = projectedReturns.map(item => item.expected);
+            const optimisticData = projectedReturns.map(item => item.optimistic);
+            const investedData = projectedReturns.map(item => item.invested);
+            
+            if (growthChart) {
+                growthChart.destroy();
+            }
+            
+            growthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Conservative',
+                            data: conservativeData,
+                            borderColor: '#93C5FD',
+                            backgroundColor: 'rgba(147, 197, 253, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Expected',
+                            data: expectedData,
+                            borderColor: '#4F46E5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Optimistic',
+                            data: optimisticData,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Amount Invested',
+                            data: investedData,
+                            borderColor: '#9CA3AF',
+                            backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1000000) {
+                                        return '₹' + (value / 1000000).toFixed(1) + 'M';
+                                    } else if (value >= 1000) {
+                                        return '₹' + (value / 1000).toFixed(0) + 'K';
+                                    }
+                                    return '₹' + value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create bar chart for risk metrics
+        function createRiskMetricsChart(riskMetrics) {
+            const ctx = document.getElementById('riskMetricsChart').getContext('2d');
+            
+            // Normalize data for visualization
+            const data = [
+                riskMetrics.volatility,
+                riskMetrics.sharpeRatio * 10, // Scale up for visibility
+                Math.abs(riskMetrics.maxDrawdown),
+                riskMetrics.beta * 10 // Scale up for visibility
+            ];
+            
+            if (riskMetricsChart) {
+                riskMetricsChart.destroy();
+            }
+            
+            riskMetricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Volatility (%)', 'Sharpe Ratio (x10)', 'Max Drawdown (%)', 'Beta (x10)'],
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#4F46E5',
+                            '#10B981',
+                            '#EF4444',
+                            '#F59E0B'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    let value = context.raw;
+                                    if (index === 1) { // Sharpe Ratio
+                                        return 'Value: ' + (value / 10).toFixed(2);
+                                    } else if (index === 3) { // Beta
+                                        return 'Value: ' + (value / 10).toFixed(2);
+                                    }
+                                    return 'Value: ' + value.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Populate recommendations table
+        function populateRecommendationsTable(recommendations) {
+            const tableBody = document.getElementById('recommendationsTable');
+            tableBody.innerHTML = '';
+            
+            // For each asset class, add recommendations to table
+            Object.entries(recommendations).forEach(([assetClass, investments]) => {
+                // Add asset class header
+                const headerRow = document.createElement('tr');
+                headerRow.className = 'bg-gray-50';
+                headerRow.innerHTML = `
+                    <td colspan="5" class="px-6 py-3 text-sm font-medium text-gray-900">
+                        ${assetClass.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </td>
+                `;
+                tableBody.appendChild(headerRow);
+                
+                // Add investments for this asset class
+                investments.forEach(investment => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    
+                    // Determine risk badge class
+                    let riskBadgeClass = 'risk-medium';
+                    if (investment.risk === 'low') {
+                        riskBadgeClass = 'risk-low';
+                    } else if (investment.risk === 'high') {
+                        riskBadgeClass = 'risk-high';
+                    }
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${investment.name}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">${(investment.allocation * 100).toFixed(1)}%</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">${formatCurrency(investment.amount)}</td>
+                        <td class="px-6 py-4 text-sm text-green-600 text-right">${investment.expectedReturn}%</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="risk-badge ${riskBadgeClass}">
+                                ${investment.risk.toUpperCase()}
+                            </span>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
